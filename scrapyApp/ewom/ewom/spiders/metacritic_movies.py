@@ -22,7 +22,7 @@ class MovieReviewsSpider(scrapy.Spider):
         if nextPage:
             yield scrapy.Request(url = response.urljoin(nextPage), callback=self.parse)
 
-    # crawl movie pages and collect data
+    # crawl movie pages and add movie data to data
     def parse_movie_details(self, response):
         productName = response.css('div.product_page_title > h1::text').get()
         type = 'Movie'
@@ -43,67 +43,79 @@ class MovieReviewsSpider(scrapy.Spider):
             'productUrlSegment': productUrlSegment
         }
 
-        #yield movieData
+        #add movie data to data dictionary
+        data = movieData
 
         #get link to critic and user reviews page
-        reviewPageUrls = response.css('div.reviews > div > div > a.see_all::attr(href)').extract()
-        criticReviewPageUrl = reviewPageUrls[0]
+        criticReviewPageUrl = response.css('div.reviews > div > div > a.see_all::attr(href)').extract_first()
 
         #crawl to critic review page
-        yield scrapy.Request(url = response.urljoin(criticReviewPageUrl), callback=self.parse_movie_critic_reviews)
-
-        try:
-            userReviewPageUrl = reviewPageUrls[1]
-            #crawl to user review page
-            yield scrapy.Request(url = response.urljoin(userReviewPageUrl), callback=self.parse_movie_user_reviews)
-        except: print(productUrlSegment + " has no user reviews")
+        yield scrapy.Request(url = response.urljoin(criticReviewPageUrl), callback=self.parse_movie_critic_reviews, meta={'data': data})
     
-    #crawl critic review page and collect review data
+    #crawl critic review page and add review data to data
     def parse_movie_critic_reviews(self, response):
+
+        #get data and create array for reviews
+        data = response.meta['data']
+        reviews = []
+
+        #collect reviews
         for review in response.css('div.review'):
-            type = 'critic'
             if review.css('span.author > a::text').get():
                 author = review.css('span.author > a::text').get()
             else: author = review.css('span.author::text').get()
             score = review.css('div.metascore_w::text').get()
             if review.css('div.summary > a::text').get():
-                summary = review.css('div.summary > a::text').get()
-            else: summary = review.css('div.summary::text').get()
-            productUrlSegment = re.findall('movie\/(.+)\/', response.request.url)[0]
+                reviewText = review.css('div.summary > a::text').get()
+            else: reviewText = review.css('div.summary::text').get()
 
             #create dictionary with critic review data
             criticReviewData = {
-                'type': type,
                 'author': author,
                 'score': score,
-                'summary': summary,
-                'productUrlSegment': productUrlSegment
+                'reviewText': reviewText
             }
 
-            yield criticReviewData
+            #add review data to reviews array
+            reviews.append(criticReviewData)
+        
+        #add reviews array to data
+        data.update({'criticReviews': reviews})
+        
+        #crawl to user review page
+        userReviewPageUrl = response.css('p.score_user > a::attr(href)').extract_first()
+        yield scrapy.Request(url = response.urljoin(userReviewPageUrl), callback=self.parse_movie_user_reviews, meta={'data': data})        
 
-    #crawl user review page and collect review data
+    #crawl user review page and add review data to data
     def parse_movie_user_reviews(self, response):
+
+        #get data and create array for reviews
+        data = response.meta['data']
+        reviews = []
+
+        #collect reviews
         for review in response.css('div.review'):
-            type = 'user'
             if review.css('span.author > a::text').get():
                 author = review.css('span.author > a::text').get()
             else: author = review.css('span.author::text').get()
             dateCreated = review.css('span.date::text').get()
             score = review.css('div.metascore_w::text').get()
             if review.css('div.summary > div > span::text').get() is not ' ':
-                summary = ' '.join(review.css('div.summary > div > span::text').extract())
-            else: summary = ' '.join(review.css('div.summary > div > span > span.blurb_expanded::text').extract())
-            productUrlSegment = re.findall('movie\/(.+)\/', response.request.url)[0]
+                reviewText = ' '.join(review.css('div.summary > div > span::text').extract())
+            else: reviewText = ' '.join(review.css('div.summary > div > span > span.blurb_expanded::text').extract())
 
             #create dictionary with user review data
             userReviewData = {
-                'type': type,
                 'author': author,
                 'dateCreated': dateCreated,
                 'score': score,
-                'summary': summary,
-                'productUrlSegment': productUrlSegment
+                'reviewText': reviewText,
             }
 
-            #yield userReviewData
+            #add review data to reviews array
+            reviews.append(userReviewData)
+            
+        #add reviews array to data
+        data.update({'userReviews': reviews})
+
+        yield data
