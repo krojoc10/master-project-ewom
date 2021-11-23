@@ -22,7 +22,7 @@ class MovieReviewsSpider(scrapy.Spider):
         if nextPage:
             yield scrapy.Request(url = response.urljoin(nextPage), callback=self.parse)
 
-    # crawl movie pages and add movie data to data
+    # crawl movie pages and add movie data to data dict
     def parse_movie_details(self, response):
         productName = response.css('div.product_page_title > h1::text').get()
         type = 'Movie'
@@ -43,7 +43,7 @@ class MovieReviewsSpider(scrapy.Spider):
             'productUrlSegment': productUrlSegment
         }
 
-        #add movie data to data dictionary
+        #add movie data to data dict
         data = movieData
 
         #get link to critic and user reviews page
@@ -52,7 +52,7 @@ class MovieReviewsSpider(scrapy.Spider):
         #crawl to critic review page
         yield scrapy.Request(url = response.urljoin(criticReviewPageUrl), callback=self.parse_movie_critic_reviews, meta={'data': data, 'reviews': []})
     
-    #crawl critic review page and add review data to data
+    #crawl critic review page and add review data to data dict
     def parse_movie_critic_reviews(self, response):
 
         #get data and create array for reviews
@@ -84,14 +84,14 @@ class MovieReviewsSpider(scrapy.Spider):
         if nextPage:
             yield scrapy.Request(url = response.urljoin(nextPage), callback=self.parse_movie_critic_reviews, meta={'data': data, 'reviews': reviews})
         
-        #add reviews array to data
+        #add reviews array to data dict
         data.update({'criticReviews': reviews})
         
         #crawl to user review page
         userReviewPageUrl = response.css('p.score_user > a::attr(href)').extract_first()
         yield scrapy.Request(url = response.urljoin(userReviewPageUrl), callback=self.parse_movie_user_reviews, meta={'data': data, 'reviews': []})        
 
-    #crawl user review page and add review data to data
+    #crawl user review page and add review data to data dict
     def parse_movie_user_reviews(self, response):
 
         #get data and create array for reviews
@@ -125,7 +125,8 @@ class MovieReviewsSpider(scrapy.Spider):
         if nextPage:
             yield scrapy.Request(url = response.urljoin(nextPage), callback=self.parse_movie_user_reviews, meta={'data': data, 'reviews': reviews})
         else:
-            #add reviews array to data
+            #add reviews array to data dict
             data.update({'userReviews': reviews})
 
+            #yield final data dict
             yield data
