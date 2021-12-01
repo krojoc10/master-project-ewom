@@ -1,6 +1,7 @@
 from urllib import request
 from bs4 import BeautifulSoup
 import json
+import re
 
 #function to open page and create soup
 def getSoup(url):
@@ -19,6 +20,29 @@ def extractMovieDetailsUrl(movieDetailsUrls, soup):
         movieDetailsUrls.append('https://www.metacritic.com' + movieDetailsUrlElement['href'])
 
     return movieDetailsUrls
+
+#function to extract movie details
+def extractMovieDetails(soup):
+    productName = soup.select('div.product_page_title')[0].find('h1').get_text()
+    type = 'Movie'
+    metascore = soup.select('div.ms_wrapper table tr td.summary_right a')[0].find('span').get_text()
+    userscore = soup.select('div.user_score_summary table tr td.summary_right a')[0].find('span').get_text()
+    producer = soup.select('span.distributor')[0].find('a').get_text()
+    summary = soup.select('div.summary_deck span')[1].find('span').get_text()
+    productUrlSegment = re.findall('movie\/(.+)', soup.find('meta', property='og:url')['content'])[0]
+
+    #create dictionary with movie data
+    movieData = {
+        'productName': productName,
+        'type': type,
+        'metascore': metascore,
+        'userscore': userscore,
+        'producer': producer,
+        'summary': summary,
+        'productUrlSegment': productUrlSegment
+    }
+
+    return movieData
 
 #empty list to save urls to movie details pages in
 movieDetailsUrls = []
@@ -41,3 +65,10 @@ while True:
     #exit if next page is not available
     else:
         break
+
+#create empty data list
+data = []
+
+#extract movie details
+for movieDetailsUrl in movieDetailsUrls:
+    data.append(extractMovieDetails(getSoup(movieDetailsUrl)))

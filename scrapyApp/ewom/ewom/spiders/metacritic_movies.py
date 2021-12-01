@@ -29,7 +29,7 @@ class MovieReviewsSpider(scrapy.Spider):
         metascore = response.css('div.ms_wrapper > table > tr > td.summary_right > a > span::text').get()
         userscore = response.css('div.user_score_summary > table > tr > td.summary_right > a > span::text').get()
         producer = response.css('span.distributor > a::text').get()
-        summary = response.css('div.summary_deck span > span::text').get()
+        summary = response.css('div.summary_deck > span > span::text').get()
         productUrlSegment = re.findall('movie\/(.+)', response.request.url)[0]
 
         #create dictionary with movie data
@@ -43,7 +43,7 @@ class MovieReviewsSpider(scrapy.Spider):
             'productUrlSegment': productUrlSegment
         }
 
-        #add movie data to data dict
+        #create data dict with movie data
         data = movieData
 
         #get link to critic and user reviews page
