@@ -2,11 +2,13 @@ from urllib import request
 from bs4 import BeautifulSoup
 import json
 import re
+import ssl
+import certifi
 
 #function to open page and create soup
 def getSoup(url):
     req = request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    pageContent = request.urlopen(req).read()
+    pageContent = request.urlopen(req, context=ssl.create_default_context(cafile=certifi.where())).read()
     return BeautifulSoup(pageContent, 'html.parser')
 
 #function to extract urls for movie detail pages
@@ -21,8 +23,67 @@ def extractMovieDetailsUrl(movieDetailsUrls, soup):
 
     return movieDetailsUrls
 
-#function to extract movie details
-def extractMovieDetails(soup):
+#function to extract critic reviews
+def extractCriticReviews(reviews, soup):
+
+    #collect reviews
+    for review in soup.select('div.review'):
+        if review.has_attr('id'):
+            continue
+        else:
+            if review.select('span.author'):
+                if review.select('span.author a'):
+                    author = review.select('span.author')[0].find('a').get_text()
+                else: author = review.find('span', class_='author').get_text()
+            else: author = ''
+            score = review.find('div', class_='metascore_w').get_text()
+            if review.select('div.summary a'):
+                reviewText = review.select('div.summary')[0].find('a').get_text()
+            else: reviewText = review.find('div', class_='summary').get_text()
+
+            #create dictionary with critic review data
+            criticReviewData = {
+                'author': author,
+                'score': score,
+                'reviewText': reviewText
+            }
+
+            #add review data to reviews array
+            reviews.append(criticReviewData)
+    
+    return reviews
+
+#function to extract user reviews
+def extractUserReviews(reviews, soup):
+
+    #collect reviews
+    for review in soup.select('div.review'):
+        if review.select('span.author'):
+            if review.select('span.author a'):
+                author = review.select('span.author')[0].find('a').get_text()
+            else: author = review.find('span', class_='author').get_text()
+        else: author = ''
+        dateCreated = review.find('span', class_='date').get_text()
+        score = review.find('div', class_='metascore_w').get_text()
+        if review.select('div.summary div')[0].find('span').get_text() != ' ':
+            reviewText = review.select('div.summary div')[0].find('span').get_text()
+        else: reviewText = review.select('div.summary div span')[0].find('span', class_='blurb_expanded').get_text()
+
+        #create dictionary with critic review data
+        userReviewData = {
+            'author': author,
+            'dateCreated': dateCreated,
+            'score': score,
+            'reviewText': reviewText
+        }
+
+        #add review data to reviews array
+        reviews.append(userReviewData)
+    
+    return reviews
+
+#main function to extract data
+def extractData(soup):
     productName = soup.select('div.product_page_title')[0].find('h1').get_text()
     type = 'Movie'
     metascore = soup.select('div.ms_wrapper table tr td.summary_right a')[0].find('span').get_text()
@@ -32,7 +93,7 @@ def extractMovieDetails(soup):
     productUrlSegment = re.findall('movie\/(.+)', soup.find('meta', property='og:url')['content'])[0]
 
     #create dictionary with movie data
-    movieData = {
+    data = {
         'productName': productName,
         'type': type,
         'metascore': metascore,
@@ -42,7 +103,48 @@ def extractMovieDetails(soup):
         'productUrlSegment': productUrlSegment
     }
 
-    return movieData
+    #get link to critic reviews page, extract reviews, and add them to data dict with loop for pagination
+    criticReviews = []
+    soup = getSoup('https://www.metacritic.com' + soup.select('div.ms_wrapper div.header_title')[0].find('a')['href'])
+    
+    while True:
+        criticReviews = extractCriticReviews(criticReviews, soup)
+
+        #get pagination element
+        nextPage = soup.select('div.page_flipper span.next')
+
+        #go to next page if available
+        if nextPage:
+            if nextPage[0].find('a'):
+                nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
+                soup = getSoup(nextPage)
+            #exit if next page is not available
+            else: break
+        else: break
+        
+    data.update({'criticReviews': criticReviews})
+
+    #get link to user reviews page, extract reviews, and add them to data dict with loop for pagination
+    userReviews = []
+    soup = getSoup('https://www.metacritic.com' + soup.select('p.score_user')[0].find('a')['href'])
+    
+    while True:
+        userReviews = extractUserReviews(userReviews, soup)
+        #get pagination element
+        nextPage = soup.select('div.page_flipper span.next')
+
+        #go to next page if available
+        if nextPage:
+            if nextPage[0].find('a'):
+                nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
+                soup = getSoup(nextPage)
+            #exit if next page is not available
+            else: break
+        else: break
+    
+    data.update({'userReviews': userReviews})
+
+    return data
 
 #empty list to save urls to movie details pages in
 movieDetailsUrls = []
@@ -69,6 +171,15 @@ while True:
 #create empty data list
 data = []
 
-#extract movie details
+temp = 0
+#extract data
 for movieDetailsUrl in movieDetailsUrls:
-    data.append(extractMovieDetails(getSoup(movieDetailsUrl)))
+    data.append(extractData(getSoup(movieDetailsUrl)))
+    temp = temp + 1
+    if temp == 4:
+        break
+
+#convert data into json and write it to file
+json_object = json.dumps(data)
+with open("test.json", "w") as outfile:
+    outfile.write(json_object)
