@@ -4,6 +4,7 @@ import json
 import re
 import ssl
 import certifi
+import datetime
 
 #function to open page and create soup
 def getSoup(url):
@@ -144,7 +145,13 @@ def extractData(soup):
     
     data.update({'userReviews': userReviews})
 
+    print('item scraped: ', data['productUrlSegment'])
+
     return data
+
+#starting
+startTime = datetime.datetime.now()
+print('status: started')
 
 #empty list to save urls to movie details pages in
 movieDetailsUrls = []
@@ -153,6 +160,7 @@ movieDetailsUrls = []
 soup = getSoup('https://www.metacritic.com/browse/movies/score/metascore/all')
 
 #get urls to movie detail pages with loop for pagination
+print('status: collecting urls to movie detail pages')
 while True:
     #extract page data
     movieDetailsUrls = extractMovieDetailsUrl(movieDetailsUrls, soup)
@@ -166,6 +174,7 @@ while True:
         soup = getSoup(nextPage)
     #exit if next page is not available
     else:
+        print('status: urls to movie detail pages successfully gathered')
         break
 
 #create empty data list
@@ -178,6 +187,21 @@ for movieDetailsUrl in movieDetailsUrls:
     temp = temp + 1
     if temp == 4:
         break
+
+#finishing
+finishTime = datetime.datetime.now()
+print('status: finished')
+elapsedTime = datetime.timedelta.total_seconds(finishTime - startTime)
+
+#update and print stats
+stats = {
+    'start_time': startTime,
+    'finish_time': finishTime,
+    'elapsed_time_seconds': elapsedTime,
+    'item_scraped_count': len(data)
+    }
+
+print(stats)
 
 #convert data into json and write it to file
 json_object = json.dumps(data)

@@ -5,9 +5,9 @@ class MovieSalesSpider(scrapy.Spider):
     start_urls = ['https://www.boxofficemojo.com/chart/ww_top_lifetime_gross/']
 
     #set pagecount limit
-    custom_settings = {
+    '''custom_settings = {
         'CLOSESPIDER_PAGECOUNT': 100
-    }
+    }'''
 
     #crawl pages and collect sales data
     def parse(self, response):

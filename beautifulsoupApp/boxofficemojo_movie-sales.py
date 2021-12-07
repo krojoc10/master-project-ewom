@@ -1,6 +1,7 @@
 from urllib import request
 from bs4 import BeautifulSoup
 import json
+import datetime
 
 #function to open page and create soup
 def getSoup(url):
@@ -17,12 +18,17 @@ def extractPageData(data, soup):
     #extract title and sales for every data record
     for dataRecord in dataRecords:
         salesData = {
-            'title': dataRecord.find('td', class_='mojo-field-type-title').get_text(),
+            'movieName': dataRecord.find('td', class_='mojo-field-type-title').get_text(),
             'sales': dataRecord.find('td', class_='mojo-field-type-money').get_text()
         }
+        print('item scraped: ', salesData)
         data.append(salesData)
 
     return data
+
+#log start
+startTime = datetime.datetime.now()
+print('status: started')
 
 #create empty data list
 data = []
@@ -46,7 +52,22 @@ while True:
     else:
         break
 
+#log finish
+finishTime = datetime.datetime.now()
+print('status: finished')
+elapsedTime = datetime.timedelta.total_seconds(finishTime - startTime)
+
+#print stats
+stats = {
+    'start_time': startTime,
+    'finish_time': finishTime,
+    'elapsed_time_seconds': elapsedTime,
+    'item_scraped_count': len(data)
+    }
+
+print(stats)
+
 #convert data into json and write it to file
 json_object = json.dumps(data)
-with open("test.json", "w") as outfile:
+with open("boxofficemojo-beautifulsoup-data.json", "w") as outfile:
     outfile.write(json_object)
