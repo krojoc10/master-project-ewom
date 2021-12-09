@@ -52,7 +52,9 @@ def extractCriticReviews(reviews, soup):
 
                 #add review data to reviews array
                 reviews.append(criticReviewData)
-        except: print('Review not scrapeable: ' + review)
+        except: 
+            print('Review not scrapeable: ' + review)
+            continue
     
     return reviews
 
@@ -83,77 +85,75 @@ def extractUserReviews(reviews, soup):
 
             #add review data to reviews array
             reviews.append(userReviewData)
-        except: print('Review not scrapeable: ' + review)
+        except: 
+            print('Review not scrapeable: ' + review)
+            continue
     
     return reviews
 
 #main function to extract data
 def extractData(soup):
-    try:
-        productName = soup.select('div.product_page_title')[0].find('h1').get_text()
-        type = 'Movie'
-        metascore = soup.select('div.ms_wrapper table tr td.summary_right a')[0].find('span').get_text()
-        userscore = soup.select('div.user_score_summary table tr td.summary_right a')[0].find('span').get_text()
-        producer = soup.select('span.distributor')[0].find('a').get_text()
-        summary = soup.select('div.summary_deck span')[1].find('span').get_text()
-        productUrlSegment = re.findall('movie\/(.+)', soup.find('meta', property='og:url')['content'])[0]
+    productName = soup.select('div.product_page_title')[0].find('h1').get_text()
+    type = 'Movie'
+    metascore = soup.select('div.ms_wrapper table tr td.summary_right a')[0].find('span').get_text()
+    userscore = soup.select('div.user_score_summary table tr td.summary_right a')[0].find('span').get_text()
+    producer = soup.select('span.distributor')[0].find('a').get_text()
+    summary = soup.select('div.summary_deck span')[1].find('span').get_text()
+    productUrlSegment = re.findall('movie\/(.+)', soup.find('meta', property='og:url')['content'])[0]
 
-        #create dictionary with movie data
-        data = {
-            'productName': productName,
-            'type': type,
-            'metascore': metascore,
-            'userscore': userscore,
-            'producer': producer,
-            'summary': summary,
-            'productUrlSegment': productUrlSegment
-        }
+    #create dictionary with movie data
+    data = {
+        'productName': productName,
+        'type': type,
+        'metascore': metascore,
+        'userscore': userscore,
+        'producer': producer,
+        'summary': summary,
+        'productUrlSegment': productUrlSegment
+    }
 
-        #get link to critic reviews page, extract reviews, and add them to data dict with loop for pagination
-        criticReviews = []
-        soup = getSoup('https://www.metacritic.com' + soup.select('div.ms_wrapper div.header_title')[0].find('a')['href'])
-        
-        while True:
-            criticReviews = extractCriticReviews(criticReviews, soup)
-
-            #get pagination element
-            nextPage = soup.select('div.page_flipper span.next')
-
-            #go to next page if available
-            if nextPage:
-                if nextPage[0].find('a'):
-                    nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
-                    soup = getSoup(nextPage)
-                #exit if next page is not available
-                else: break
-            else: break
-            
-        data.update({'criticReviews': criticReviews})
-
-        #get link to user reviews page, extract reviews, and add them to data dict with loop for pagination
-        userReviews = []
-        soup = getSoup('https://www.metacritic.com' + soup.select('p.score_user')[0].find('a')['href'])
-        
-        while True:
-            userReviews = extractUserReviews(userReviews, soup)
-            #get pagination element
-            nextPage = soup.select('div.page_flipper span.next')
-
-            #go to next page if available
-            if nextPage:
-                if nextPage[0].find('a'):
-                    nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
-                    soup = getSoup(nextPage)
-                #exit if next page is not available
-                else: break
-            else: break
-        
-        data.update({'userReviews': userReviews})
-
-        print('item scraped: ', data['productUrlSegment'])
+    #get link to critic reviews page, extract reviews, and add them to data dict with loop for pagination
+    criticReviews = []
+    soup = getSoup('https://www.metacritic.com' + soup.select('div.ms_wrapper div.header_title')[0].find('a')['href'])
     
-    except: print('Movie not scrapeable: ' + re.findall('movie\/(.+)', soup.find('meta', property='og:url')['content'])[0])
+    while True:
+        criticReviews = extractCriticReviews(criticReviews, soup)
 
+        #get pagination element
+        nextPage = soup.select('div.page_flipper span.next')
+
+        #go to next page if available
+        if nextPage:
+            if nextPage[0].find('a'):
+                nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
+                soup = getSoup(nextPage)
+            #exit if next page is not available
+            else: break
+        else: break
+        
+    data.update({'criticReviews': criticReviews})
+
+    #get link to user reviews page, extract reviews, and add them to data dict with loop for pagination
+    userReviews = []
+    soup = getSoup('https://www.metacritic.com' + soup.select('p.score_user')[0].find('a')['href'])
+    
+    while True:
+        userReviews = extractUserReviews(userReviews, soup)
+        #get pagination element
+        nextPage = soup.select('div.page_flipper span.next')
+
+        #go to next page if available
+        if nextPage:
+            if nextPage[0].find('a'):
+                nextPage = 'https://www.metacritic.com' + nextPage[0].find('a')['href']
+                soup = getSoup(nextPage)
+            #exit if next page is not available
+            else: break
+        else: break
+    
+    data.update({'userReviews': userReviews})
+    print('item scraped: ', data['productUrlSegment'])
+    
     return data
 
 #starting
@@ -191,9 +191,13 @@ data = []
 itemCount = 1
 #extract data
 for movieDetailsUrl in movieDetailsUrls:
-    data.append(extractData(getSoup(movieDetailsUrl)))
-    print('# of items scraped: ' + str(itemCount))
-    itemCount = itemCount + 1
+    try:
+        data.append(extractData(getSoup(movieDetailsUrl)))
+        print('# of items scraped: ' + str(itemCount))
+        itemCount = itemCount + 1
+    except:
+        print('Movie not scrapeable: ' + movieDetailsUrl)
+        continue
 
 #finishing
 finishTime = datetime.datetime.now()
