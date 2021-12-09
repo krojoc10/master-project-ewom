@@ -212,5 +212,5 @@ print(stats)
 
 #convert data into json and write it to file
 json_object = json.dumps(data)
-with open("test.json", "w") as outfile:
+with open("metacritic-beautifulsoup-data.json", "w") as outfile:
     outfile.write(json_object)
