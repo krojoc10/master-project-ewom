@@ -6,9 +6,9 @@ class AlbumReviewsSpider(scrapy.Spider):
     start_urls = ['https://www.metacritic.com/browse/albums/score/metascore/all']
 
     #set pagecount limit
-    custom_settings = {
+    '''custom_settings = {
         'CLOSESPIDER_PAGECOUNT': 100
-    }
+    }'''
 
     # collect links to album pages and crawl to album detail page
     def parse(self, response):
