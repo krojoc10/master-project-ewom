@@ -7,7 +7,7 @@ class MovieReviewsSpider(scrapy.Spider):
 
     #set pagecount limit
     '''custom_settings = {
-        'CLOSESPIDER_PAGECOUNT': 100
+        'CLOSESPIDER_PAGECOUNT': 1000
     }'''
 
     # collect links to movie pages and crawl to movie detail page
@@ -29,6 +29,7 @@ class MovieReviewsSpider(scrapy.Spider):
         metascore = response.css('div.ms_wrapper > table > tr > td.summary_right > a > span::text').get()
         userscore = response.css('div.user_score_summary > table > tr > td.summary_right > a > span::text').get()
         producer = response.css('span.distributor > a::text').get()
+        releaseDate = response.css('span.release_date > span:nth-of-type(2n)::text').get()
         if response.css('div.summary_deck > span > span::text').get() != ' ':
             summary = response.css('div.summary_deck > span > span::text').get()
         else: summary = response.css('div.summary_deck > span > span > span.blurb_expanded::text').get()
@@ -41,6 +42,7 @@ class MovieReviewsSpider(scrapy.Spider):
             'metascore': metascore,
             'userscore': userscore,
             'producer': producer,
+            'releaseDate': releaseDate,
             'summary': summary,
             'productUrlSegment': productUrlSegment
         }
