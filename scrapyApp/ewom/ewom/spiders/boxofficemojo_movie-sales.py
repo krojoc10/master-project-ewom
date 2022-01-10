@@ -1,8 +1,9 @@
 import scrapy
+import re
 
 class MovieSalesSpider(scrapy.Spider):
     name = "movieSales"
-    start_urls = ['https://www.boxofficemojo.com/chart/ww_top_lifetime_gross/']
+    start_urls = ['https://www.boxofficemojo.com/year/world/2022/']
 
     #set pagecount limit
     '''custom_settings = {
@@ -13,17 +14,21 @@ class MovieSalesSpider(scrapy.Spider):
     def parse(self, response):
 
         #collect title and sales data
-        for dataRecord in response.css('#table > div > table > tr'):
-            movieName = dataRecord.css('td.mojo-field-type-title > a::text').get()
-            sales = dataRecord.css('td.mojo-field-type-money::text').get()
+        dataRecords = response.css('#table > div > table > tr')
+        dataRecords = dataRecords[1:]
+        releaseYear = re.findall('\d+', response.request.url)[0]
+
+        for dataRecord in dataRecords:
+            movieName = dataRecord.css('td:nth-of-type(2n) > a::text').get()
+            sales = dataRecord.css('td:nth-of-type(3n)::text').get()
 
             #yield data record
             yield {
                 'movieName': movieName,
+                'releaseYear': releaseYear,
                 'sales': sales
             }
         
         #pagination funtion
-        nextPage = response.css('div.mojo-pagination > ul > li.a-last > a::attr(href)').get()
-        if nextPage:
-            yield scrapy.Request(url = response.urljoin(nextPage), callback=self.parse)
+        if releaseYear != '1977':
+            yield scrapy.Request(url = 'https://www.boxofficemojo.com/year/world/' + str(int(releaseYear) - 1), callback=self.parse)
