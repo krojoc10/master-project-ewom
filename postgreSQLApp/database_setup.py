@@ -21,6 +21,14 @@ movieProductData = clean_product_data(movieProductData)
 #insert movie data into database
 insert_product_data(movieProductData, cur)
 
+#filter game data, add sales data and clean
+gameProductData = reviewData.where(reviewData['type']=='Game').dropna(how='all')
+gameProductData = add_game_sales_to_product_data(gameProductData)
+gameProductData = clean_product_data(gameProductData)
+
+#insert movie data into database
+insert_product_data(gameProductData, cur)
+
 #update database
 conn.commit()
 

@@ -7,7 +7,7 @@ def review_files_to_df():
     try:
         movieReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-movie-reviews-scrapy-data.json')
         gameReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-game-reviews-scrapy-data.json')
-        albumReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\first_run\metacritic-album-reviews-scrapy-data.json')
+        albumReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-album-reviews-scrapy-data.json')
     except:
         print("Invalid file names")
 
@@ -28,12 +28,14 @@ def clean_product_data(df):
 
     #convert releaseDate to date format
     productData['releaseDate'].replace({'TBA': None}, inplace=True)
-    productData['releaseDate'] = pd.to_datetime(productData['releaseDate'], format='%B %d, %Y')
+    productData['releaseDate'] = pd.to_datetime(productData['releaseDate'], format='%B %d, %Y', errors='coerce')
 
     #set data types
     productData = productData.astype({'productID': 'int64', 'productName': 'object', 'type': 'object', 'metascore': 'int64', 'userscore': 'float64', 'producer': 'object', 'releaseDate': 'datetime64', 'summary': 'object', 'sales': 'float64'})
 
+    #final clean
     productData = productData.replace({np.NaN: None})
+    productData = productData.drop_duplicates(subset=['productID'])
 
     return productData
 
@@ -63,27 +65,30 @@ def add_movie_sales_to_product_data(df):
 def add_game_sales_to_product_data(df):
     #converting sales input file to dataframes
     try:
-        gameSalesData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\vgChartz-game-sales-scrapy-data.json')
+        gameSalesData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\vgChartz-game-sales-scrapy-data.json')
     except:
         print("Invalid file name")
 
-    #removing rows with empty sales and duplicates
+    #removing rows with empty sales
     gameSalesData['sales'].replace({'N/A': None}, inplace=True)
     gameSalesData['sales'].replace(to_replace=[r"\\t|\\n|\\r", "\t|\n|\r"], value=[None, None], regex=True, inplace=True)
     gameSalesData['sales'].replace({'0.00m': None}, inplace=True)
     gameSalesData = gameSalesData.dropna()
-    gameSalesData.drop_duplicates(subset='gameName', inplace=True)
 
-    #clean name column
+    #prepare keys for matching
+    df['platform'] = df['productUrlSegment'].str.extract(r'(.*)\/')
+    df['platform'] = df['platform'].replace({'playstation': 'PS', 'dreamcast': 'DC', 'gamecube': 'GC', 'playstation-3': 'PS3', 'xbox': 'XB', 'pc': 'PC', 'playstation-2': 'PS2', 'xbox-360': 'X360', 'switch': 'NS', 'wii-u': 'WiiU', 'psp': 'PSP', '3ds': '3DS', 'ds': 'DS', 'xbox-one': 'XOne', 'nintendo-64': 'N64', 'playstation-4': 'PS4', 'playstation-5': 'PS5', 'wii': 'Wii', 'playstation-vita': 'PSV', 'xbox-series-x': 'XS', 'game-boy-advance': 'GBA'})
+    df['gameName'] = df['productName']
     gameSalesData['gameName'] = gameSalesData['gameName'].str.strip()
+    gameSalesData = gameSalesData.drop(columns=['releaseDate'])
     
     #add sales to product data
-    df = pd.merge(left=df, right=gameSalesData, how='left', left_on='productName', right_on='gameName')
+    df = pd.merge(left=df, right=gameSalesData, how='left', on=['gameName', 'platform'])
 
     #clean new values
     df['sales'] = df['sales'].str.replace(r'm', '')
     df['sales'] = df['sales'].astype(float)
     df['sales'] = df['sales'] * 1000000
-    df = df.drop(columns=['gameName', 'publisher'])
+    df = df.drop(columns=['platform', 'gameName'])
 
     return df
