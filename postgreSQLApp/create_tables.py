@@ -16,6 +16,7 @@ def create_tables(cur):
             metascore int,
             userscore numeric,
             producer text,
+            releaseDate date,
             summary text,
             sales numeric
             );
