@@ -1,6 +1,6 @@
 from database_connection import connect_database, close_database
 from create_tables import create_tables
-from pre_process_data import review_files_to_df, add_movie_sales_to_product_data, clean_product_data, add_game_sales_to_product_data
+from pre_process_data import review_files_to_df, add_movie_sales_to_product_data, clean_product_data, add_game_sales_to_product_data, add_album_sales_to_product_data
 from insert_data import insert_product_data
 
 #connect to database
@@ -26,8 +26,16 @@ gameProductData = reviewData.where(reviewData['type']=='Game').dropna(how='all')
 gameProductData = add_game_sales_to_product_data(gameProductData)
 gameProductData = clean_product_data(gameProductData)
 
-#insert movie data into database
+#insert game data into database
 insert_product_data(gameProductData, cur)
+
+#filter album data and clean
+albumProductData = reviewData.where(reviewData['type']=='Album').dropna(how='all')
+albumProductData = add_album_sales_to_product_data(albumProductData)
+albumProductData = clean_product_data(albumProductData)
+
+#insert album data into database
+insert_product_data(albumProductData, cur)
 
 #update database
 conn.commit()

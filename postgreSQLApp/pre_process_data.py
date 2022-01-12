@@ -92,3 +92,8 @@ def add_game_sales_to_product_data(df):
     df = df.drop(columns=['platform', 'gameName'])
 
     return df
+
+def add_album_sales_to_product_data(df):
+    df['sales'] = None
+
+    return df
