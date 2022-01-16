@@ -13,7 +13,7 @@ def review_files_to_df():
 
     #merge review data and add productID
     reviewData = pd.concat([movieReviewData, gameReviewData, albumReviewData])
-    reviewData.insert(0, 'productID', range(1, len(reviewData) + 1)) 
+    reviewData.insert(0, 'productID', range(0, len(reviewData))) 
     reviewData['productID'] = reviewData['productID'].astype(int64)
     reviewData.index = reviewData['productID']
 
@@ -95,5 +95,52 @@ def add_game_sales_to_product_data(df):
 
 def add_album_sales_to_product_data(df):
     df['sales'] = None
+
+    return df
+
+def extract_reviews_to_df(df):
+    #remove unnecessary columns
+    df = df.drop(columns=['productName', 'type', 'metascore', 'userscore', 'producer', 'releaseDate', 'summary', 'productUrlSegment'])
+
+    #convert df to dict and create empty review list
+    df_dict = df.to_dict('records')
+    review_list = []
+
+    #loop through df_dict and append reviews to review_list
+    for row in df_dict:
+        productID = row['productID']
+        for review in row['criticReviews']:
+            review.update({'productID': productID, 'type': 'criticReview'})
+            review_list.append(review)
+        for review in row['userReviews']:
+            review.update({'productID': productID, 'type': 'userReview'})
+            review_list.append(review)
+
+    #convert review_list to df
+    reviews = pd.DataFrame(review_list)
+
+    #add reviewID
+    reviews.insert(0, 'reviewID', range(0, len(reviews))) 
+    reviews['reviewID'] = reviews['reviewID'].astype(int64)
+    reviews.index = reviews['reviewID']
+
+    return reviews
+
+def clean_review_data(df):
+    #drop rows with empty data
+    df = df.dropna(subset=['author', 'score', 'reviewText'])
+
+    #clean review text
+    df['reviewText'] = df['reviewText'].str.strip()
+
+    #convert releaseDate to date format
+    df['dateCreated'] = pd.to_datetime(df['dateCreated'], format='%b %d, %Y', errors='coerce')
+
+    #set data types
+    df = df.astype({'reviewID': 'int64', 'author': 'object', 'score': 'int64', 'reviewText': 'object', 'productID': 'int64', 'type': 'object', 'dateCreated': 'datetime64'})
+
+    #final clean
+    df = df.replace({np.NaN: None})
+    df = df[['reviewID', 'type', 'author', 'dateCreated', 'score', 'reviewText', 'productID']]
 
     return df

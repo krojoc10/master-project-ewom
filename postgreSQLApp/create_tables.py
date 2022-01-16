@@ -22,11 +22,12 @@ def create_tables(cur):
             );
         CREATE TABLE Review
             (reviewID int PRIMARY KEY,
-        	type boolean,
+        	type text,
             author text,
             dateCreated date,
             score int,
-            summary text,
-            product int);''')
+            reviewText text,
+            productID int,
+            CONSTRAINT fk_product FOREIGN KEY(productID) REFERENCES product(productID));''')
     except (Exception, psycopg2.Error) as error:
         print ("Error while creating database structure", error)
