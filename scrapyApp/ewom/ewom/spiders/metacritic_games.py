@@ -29,6 +29,7 @@ class GameReviewsSpider(scrapy.Spider):
         metascore = response.css('div.metascore_wrap > a > div > span::text').get()
         userscore = response.css('div.userscore_wrap > a > div::text').get()
         producer = response.css('li.developer > span.data > a::text').get()
+        releaseDate = response.css('div.content_head > div.product_data > ul > li.release_data > span.data::text').get()
         summary = response.css('div.main_details > ul.summary_details > li > span.data > span > span.blurb_expanded::text').get()
         productUrlSegment = re.findall('game\/(.+)', response.request.url)[0]
 
@@ -39,6 +40,7 @@ class GameReviewsSpider(scrapy.Spider):
             'metascore': metascore,
             'userscore': userscore,
             'producer': producer,
+            'releaseDate': releaseDate,
             'summary': summary,
             'productUrlSegment': productUrlSegment
         }

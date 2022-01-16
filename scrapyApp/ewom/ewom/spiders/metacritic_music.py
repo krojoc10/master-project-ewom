@@ -29,6 +29,7 @@ class AlbumReviewsSpider(scrapy.Spider):
         metascore = response.css('div.metascore_wrap > a > div > span::text').get()
         userscore = response.css('div.userscore_wrap > a > div::text').get()
         producer = response.css('span.band_name::text').get()
+        releaseDate = response.css('div.content_head > div.product_data > ul > li.release > span.data::text').get()
         if response.css('li.product_summary > span.data > span::text').get() != ' ':
             summary = response.css('li.product_summary > span.data > span::text').get()
         else: summary = response.css('li.product_summary > span.data > span > span.blurb_expanded::text').get()
@@ -41,6 +42,7 @@ class AlbumReviewsSpider(scrapy.Spider):
             'metascore': metascore,
             'userscore': userscore,
             'producer': producer,
+            'releaseDate': releaseDate,
             'summary': summary,
             'productUrlSegment': productUrlSegment
         }
