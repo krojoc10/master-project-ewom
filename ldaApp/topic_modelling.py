@@ -6,6 +6,7 @@ import gensim.corpora as corpora
 from gensim.models import CoherenceModel
 import datetime
 import re
+import matplotlib.pylab as plt
 
 #get data from database and save in dataframe
 print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': create dataframe with data from database')
@@ -37,22 +38,34 @@ id2word = corpora.Dictionary(reviews)
 corpus = [id2word.doc2bow(review) for review in reviews]
 print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': dictionary and corpus created')
 
-#build model
-print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': build model')
-lda_model = gensim.models.LdaMulticore(corpus=corpus,
-                                       id2word=id2word,
-                                       num_topics=10,
-                                       random_state=100,
-                                       chunksize=100,
-                                       passes=10,
-                                       per_word_topics=True)
-print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': model built')
+#evaluate models based on different number of topics
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': evaluate models')
+def model_evaluation(k):
+    #build model
+    lda_model = gensim.models.LdaModel(corpus=corpus,
+                                    id2word=id2word,
+                                    num_topics=k,
+                                    chunksize=10000,
+                                    passes=1,
+                                    per_word_topics=True)
+    #compute coherence score
+    coherence_model_lda = CoherenceModel(model=lda_model, corpus=corpus, coherence='u_mass')
+    return coherence_model_lda.get_coherence()
 
-#save model to disk
-path_to_model = ""
-lda_model.save(path_to_model)
+min_topics = 205
+max_topics = 255
+step_size = 5
+topics_range = range(min_topics, max_topics, step_size)
 
-#compute coherence score
-coherence_model_lda = CoherenceModel(model=lda_model, texts=reviews, dictionary=id2word, coherence='c_v')
-coherence_lda = coherence_model_lda.get_coherence()
-print(coherence_lda)
+modelResults = {}
+
+for k in topics_range:
+    c = model_evaluation(k)
+    modelResults.update({k:c})
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': models evaluated')
+
+#print and plot results
+print(modelResults)
+x, y = zip(*modelResults.items())
+plt.plot(x, y)
+plt.show()
