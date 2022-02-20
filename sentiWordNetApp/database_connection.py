@@ -13,9 +13,9 @@ def load_data_from_db(db):
     dataRecords = list(db.product_reviews.find())
 
     #create dataframe from dataRecords
-    criticReviews = pd.json_normalize(dataRecords, 'criticReviews', ['productName', 'type', 'metascore', 'userscore', 'producer', 'releaseDate', 'summary', 'sales'])
+    criticReviews = pd.json_normalize(dataRecords, 'criticReviews', ['_id'])
     criticReviews['reviewType'] = 'critic'
-    userReviews = pd.json_normalize(dataRecords, 'userReviews', ['productName', 'type', 'metascore', 'userscore', 'producer', 'releaseDate', 'summary', 'sales'])
+    userReviews = pd.json_normalize(dataRecords, 'userReviews', ['_id'])
     userReviews['reviewType'] = 'user'
     df = pd.concat([criticReviews, userReviews])
     df = df.reset_index()

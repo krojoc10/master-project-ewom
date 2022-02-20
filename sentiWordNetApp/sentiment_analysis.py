@@ -1,4 +1,5 @@
 from database_connection import connect_database, load_data_from_db
+from insert_data import insert_data
 from nltk.stem import WordNetLemmatizer
 import nltk
 from nltk.corpus import stopwords
@@ -99,7 +100,7 @@ for review in data_dict:
 data['sentimentScore'] = reviewSentimentScores
 print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': review sentiment scores added')
 
-print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': extract sentiment from sentiment score, sentiment label from meta/user-score and compare')
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': evaluate performance')
 #create sentiment from sentiment score
 conditions = [
     (data['sentimentScore'] < 0),
@@ -129,7 +130,6 @@ conditions = [
     ]
 values = ['TP', 'FP', 'TN', 'FN']
 data['sentimentResult'] = np.select(conditions, values)
-print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': finished')
 
 #stats
 accuracy = (len(data[data['sentimentResult'] == 'TP']) + len(data[data['sentimentResult'] == 'TN'])) / len(data[data['sentimentResult'] != None])
@@ -145,3 +145,9 @@ stats = {
 }
 
 print(stats)
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': evaluation done')
+
+#insert sentiment score into database
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': insert sentiment score into database')
+insert_data(data, db)
+print(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + ': database updated')
