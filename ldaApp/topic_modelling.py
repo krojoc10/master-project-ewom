@@ -62,9 +62,15 @@ if evalTrue == 'y':
         coherence_model_lda = CoherenceModel(model=lda_model, corpus=corpus, coherence='u_mass')
         return coherence_model_lda.get_coherence()
 
-    min_topics = 5
-    max_topics = 405
-    step_size = 5
+    while True:
+        try:
+            min_topics = int(input('Insert minimum number of topics:'))
+            max_topics = int(input('Insert maximum number of topics:'))
+            step_size = int(input('Insert step size:'))
+            break
+        except ValueError:
+            print('Please enter integer value.')
+            continue
     topics_range = range(min_topics, max_topics, step_size)
 
     modelResults = {}
