@@ -5,10 +5,11 @@ class GameReviewsSpider(scrapy.Spider):
     name = "gameReviews"
     start_urls = ['https://www.metacritic.com/browse/games/score/metascore/all']
 
-    #set pagecount limit
-    '''custom_settings = {
-        'CLOSESPIDER_PAGECOUNT': 100
-    }'''
+    #set pagecount limit and autothrottle
+    custom_settings = {
+        #'CLOSESPIDER_PAGECOUNT': 100,
+        'AUTOTHROTTLE_ENABLED': True
+    }
 
     # collect links to game pages and crawl to game detail page
     def parse(self, response):
@@ -28,9 +29,17 @@ class GameReviewsSpider(scrapy.Spider):
         type = 'Game'
         metascore = response.css('div.metascore_wrap > a > div > span::text').get()
         userscore = response.css('div.userscore_wrap > a > div::text').get()
-        producer = response.css('li.developer > span.data > a::text').get()
+        if response.css('li.publisher > span.data > a::text').get():
+            producer = response.css('li.publisher > span.data > a::text').get().strip(' \n\t')
+        else: producer = None
         releaseDate = response.css('div.content_head > div.product_data > ul > li.release_data > span.data::text').get()
         summary = response.css('div.main_details > ul.summary_details > li > span.data > span > span.blurb_expanded::text').get()
+        rankings = response.css('table.rankings > tr > td.ranking_wrap > div.ranking_title > a::text').getall()
+        developer = response.css('li.developer > span.data > a::text').get()
+        genres = response.css('li.product_genre > span.data::text').getall()
+        noPlayers = response.css('li.product_players > span.data::text').get()
+        cheats = response.css('li.product_cheats > span.data > a::text').getall()
+        rating = response.css('li.product_rating > span.data::text').get()
         productUrlSegment = re.findall('game\/(.+)', response.request.url)[0]
 
         #create dictionary with movie data
@@ -42,6 +51,12 @@ class GameReviewsSpider(scrapy.Spider):
             'producer': producer,
             'releaseDate': releaseDate,
             'summary': summary,
+            'rankings': rankings,
+            'developer': developer,
+            'genres': genres,
+            'noPlayers': noPlayers,
+            'cheats': cheats,
+            'rating': rating,
             'productUrlSegment': productUrlSegment
         }
 
@@ -67,7 +82,7 @@ class GameReviewsSpider(scrapy.Spider):
                 author = review.css('div.source > a::text').get()
             else: author = review.css('div.source::text').get()
             score = review.css('div.metascore_w::text').get()
-            reviewText = review.css('div.review_body::text').get()
+            reviewText = review.css('div.review_body::text').get().strip(' \n\t')
 
             #create dictionary with critic review data
             criticReviewData = {
@@ -108,6 +123,7 @@ class GameReviewsSpider(scrapy.Spider):
             if review.css('div.review_body > span > span.blurb_expanded::text').get():
                 reviewText = review.css('div.review_body > span > span.blurb_expanded::text').get()
             else: reviewText = review.css('div.review_body > span::text').get()
+            helpfulness = review.css('div.helpful_summary > a span.total_ups::text').get() + '/' + review.css('div.helpful_summary > a span.total_thumbs::text').get()
 
             #create dictionary with user review data
             userReviewData = {
@@ -115,6 +131,7 @@ class GameReviewsSpider(scrapy.Spider):
                 'dateCreated': dateCreated,
                 'score': score,
                 'reviewText': reviewText,
+                'helpfulness': helpfulness
             }
 
             #add review data to reviews array

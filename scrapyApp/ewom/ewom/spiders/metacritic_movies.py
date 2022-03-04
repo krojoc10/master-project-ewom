@@ -5,10 +5,11 @@ class MovieReviewsSpider(scrapy.Spider):
     name = "movieReviews"
     start_urls = ['https://www.metacritic.com/browse/movies/score/metascore/all']
 
-    #set pagecount limit
-    '''custom_settings = {
-        'CLOSESPIDER_PAGECOUNT': 1000
-    }'''
+    #set pagecount limit and autothrottle
+    custom_settings = {
+        #'CLOSESPIDER_PAGECOUNT': 100,
+        'AUTOTHROTTLE_ENABLED': True
+    }
 
     # collect links to movie pages and crawl to movie detail page
     def parse(self, response):
@@ -33,6 +34,13 @@ class MovieReviewsSpider(scrapy.Spider):
         if response.css('div.summary_deck > span > span::text').get() != ' ':
             summary = response.css('div.summary_deck > span > span::text').get()
         else: summary = response.css('div.summary_deck > span > span > span.blurb_expanded::text').get()
+        rankings = response.css('table.rankings > tr > td.ranking_wrap > div.ranking_title > a::text').getall()
+        director = response.css('div.director > a > span::text').get()
+        genres = response.css('div.genres > span:nth-of-type(2n) > span::text').getall()
+        if response.css('div.rating > span:nth-of-type(2n)::text').get():
+            rating = response.css('div.rating > span:nth-of-type(2n)::text').get().strip(' \n\t')
+        else: rating = None
+        runtime = response.css('div.runtime > span:nth-of-type(2n)::text').get()
         productUrlSegment = re.findall('movie\/(.+)', response.request.url)[0]
 
         #create dictionary with movie data
@@ -44,6 +52,11 @@ class MovieReviewsSpider(scrapy.Spider):
             'producer': producer,
             'releaseDate': releaseDate,
             'summary': summary,
+            'rankings': rankings,
+            'director': director,
+            'genres': genres,
+            'rating': rating,
+            'runtime': runtime,
             'productUrlSegment': productUrlSegment
         }
 
@@ -65,13 +78,15 @@ class MovieReviewsSpider(scrapy.Spider):
 
         #collect reviews
         for review in response.css('div.review'):
+            if review.css('script'):
+                continue
             if review.css('span.author > a::text').get():
                 author = review.css('span.author > a::text').get()
             else: author = review.css('span.author::text').get()
             score = review.css('div.metascore_w::text').get()
             if review.css('div.summary > a::text').get():
-                reviewText = review.css('div.summary > a::text').get()
-            else: reviewText = review.css('div.summary::text').get()
+                reviewText = review.css('div.summary > a::text').get().strip(' \n\t')
+            else: reviewText = review.css('div.summary::text').get().strip(' \n\t')
 
             #create dictionary with critic review data
             criticReviewData = {
@@ -112,6 +127,7 @@ class MovieReviewsSpider(scrapy.Spider):
             if review.css('div.summary > div > span::text').get() != ' ':
                 reviewText = ' '.join(review.css('div.summary > div > span::text').extract())
             else: reviewText = ' '.join(review.css('div.summary > div > span > span.blurb_expanded::text').extract())
+            helpfulness = review.css('div.helpful > div > span > span.yes_count::text').get() + '/' + review.css('div.helpful > div > span > span.total_count::text').get()
 
             #create dictionary with user review data
             userReviewData = {
@@ -119,6 +135,7 @@ class MovieReviewsSpider(scrapy.Spider):
                 'dateCreated': dateCreated,
                 'score': score,
                 'reviewText': reviewText,
+                'helpfulness': helpfulness
             }
 
             #add review data to reviews array

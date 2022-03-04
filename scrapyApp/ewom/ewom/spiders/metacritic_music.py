@@ -5,10 +5,11 @@ class AlbumReviewsSpider(scrapy.Spider):
     name = "albumReviews"
     start_urls = ['https://www.metacritic.com/browse/albums/score/metascore/all']
 
-    #set pagecount limit
-    '''custom_settings = {
-        'CLOSESPIDER_PAGECOUNT': 100
-    }'''
+    #set pagecount limit and autothrottle
+    custom_settings = {
+        #'CLOSESPIDER_PAGECOUNT': 100,
+        'AUTOTHROTTLE_ENABLED': True
+    }
 
     # collect links to album pages and crawl to album detail page
     def parse(self, response):
@@ -28,11 +29,17 @@ class AlbumReviewsSpider(scrapy.Spider):
         type = 'Album'
         metascore = response.css('div.metascore_wrap > a > div > span::text').get()
         userscore = response.css('div.userscore_wrap > a > div::text').get()
-        producer = response.css('span.band_name::text').get()
+        if response.css('li.publisher > span.data > a > span::text').get():
+            producer = response.css('li.publisher > span.data > a > span::text').get().strip(' \n\t')
+        else: producer = None
         releaseDate = response.css('div.content_head > div.product_data > ul > li.release > span.data::text').get()
         if response.css('li.product_summary > span.data > span::text').get() != ' ':
             summary = response.css('li.product_summary > span.data > span::text').get()
         else: summary = response.css('li.product_summary > span.data > span > span.blurb_expanded::text').get()
+        rankings = response.css('table.rankings > tr > td.ranking_wrap > div.ranking_title > a::text').getall()
+        band = response.css('span.band_name::text').get()
+        recordLabel = response.css('li.product_company > span.data::text').get()
+        genres = response.css('li.product_genre > span.data::text').getall()
         productUrlSegment = re.findall('music\/(.+)', response.request.url)[0]
 
         #create dictionary with movie data
@@ -44,6 +51,10 @@ class AlbumReviewsSpider(scrapy.Spider):
             'producer': producer,
             'releaseDate': releaseDate,
             'summary': summary,
+            'rankings': rankings,
+            'band': band,
+            'recordLabel': recordLabel,
+            'genres': genres,
             'productUrlSegment': productUrlSegment
         }
 
@@ -69,7 +80,7 @@ class AlbumReviewsSpider(scrapy.Spider):
                 author = review.css('div.source > a::text').get()
             else: author = review.css('div.source::text').get()
             score = review.css('div.metascore_w::text').get()
-            reviewText = review.css('div.review_body::text').get()
+            reviewText = review.css('div.review_body::text').get().strip(' \n\t')
 
             #create dictionary with critic review data
             criticReviewData = {
@@ -110,6 +121,7 @@ class AlbumReviewsSpider(scrapy.Spider):
             if review.css('div.review_body > span > span.blurb_expanded::text').get():
                 reviewText = review.css('div.review_body > span > span.blurb_expanded::text').get()
             else: reviewText = review.css('div.review_body > span::text').get()
+            helpfulness = review.css('div.helpful_summary > a span.total_ups::text').get() + '/' + review.css('div.helpful_summary > a span.total_thumbs::text').get()
 
             #create dictionary with user review data
             userReviewData = {
@@ -117,6 +129,7 @@ class AlbumReviewsSpider(scrapy.Spider):
                 'dateCreated': dateCreated,
                 'score': score,
                 'reviewText': reviewText,
+                'helpfulness': helpfulness
             }
 
             #add review data to reviews array
