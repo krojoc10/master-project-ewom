@@ -3,11 +3,11 @@ import psycopg2
 def connect_database():
     try:
     #define db access
-        connection = psycopg2.connect(user = "test",
-                                      password = "test123",
+        connection = psycopg2.connect(user = input('Enter database user: '),
+                                      password = input('Enter database password: '),
                                       host = "localhost",
                                       port = "5433",
-                                      database = "test")
+                                      database = input('Enter database name: '))
         return connection
     except (Exception, psycopg2.Error) as error :
         print ("Error while connecting to PostgreSQL", error)

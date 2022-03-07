@@ -5,9 +5,9 @@ import numpy as np
 def review_files_to_df():
     #converting review input files to dataframes
     try:
-        movieReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-movie-reviews-scrapy-data.json')
-        gameReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-game-reviews-scrapy-data.json')
-        albumReviewData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\metacritic-album-reviews-scrapy-data.json')
+        movieReviewData = pd.read_json(input('Enter path to movie review data: '))
+        gameReviewData = pd.read_json(input('Enter path to game review data: '))
+        albumReviewData = pd.read_json(input('Enter path to album review data: '))
     except:
         print("Invalid file names")
 
@@ -48,7 +48,7 @@ def clean_data(df):
 def add_movie_sales_to_product_data(df):
     #converting sales input file to dataframes
     try:
-        movieSalesData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\boxofficemojo-movie-sales-scrapy-data.json')
+        movieSalesData = pd.read_json(input('Enter path to movie sales data: '))
     except:
         print("Invalid file name")
 
@@ -71,7 +71,7 @@ def add_movie_sales_to_product_data(df):
 def add_game_sales_to_product_data(df):
     #converting sales input file to dataframes
     try:
-        gameSalesData = pd.read_json(r'C:\Users\kropf\Documents\master-project-ewom\scrapingResults\final_data\vgChartz-game-sales-scrapy-data.json')
+        gameSalesData = pd.read_json(input('Enter path to game sales data: '))
     except:
         print("Invalid file name")
 
